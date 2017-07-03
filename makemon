@@ -1,0 +1,155 @@
+#!/bin/bash
+
+while [ "$(whoami)" != "root" ]; do
+    echo "You must be root!"
+    exit 1
+done
+
+CHOICE="$1"
+
+MASTER() {
+
+#################
+# Randomize Mac #
+#################
+
+RAND_MAC() {
+
+gen() {
+NUM="$(tr -dc '0-9a-f' </dev/urandom | head -c 2)"
+echo -n $NUM:
+}
+
+for c in {1..6}; do
+
+   if [ "$c" -lt "6" ]; then
+      gen
+   else
+      gen | tr -d ':'
+   fi
+
+done
+}
+
+# Save Randomize mac to variable "nmac" #
+nmac="$(RAND_MAC)"
+
+##########################################
+# Create a single new mon interface with #
+# a randomized mac address               #
+##########################################
+
+if [ "$CHOICE" == "-c" ]; then
+
+iw dev wlo1 interface add mon1 type monitor; wait
+add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
+
+   if [ "$(add_mac)" == "[ERROR]" ]; then
+
+      iw mon1 del && MASTER
+
+   else
+
+      ifconfig mon1 up; wait
+      echo -e "\x1b[32mmon1 is up\x1b[0m"
+
+   fi
+
+#############################
+# Delete all mon interfaces #
+#############################
+ 
+elif [ "$CHOICE" == "-d" ]; then
+
+# Check if any mons exist #    
+m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
+
+if [ "$m_count" == "0" ]; then
+
+   echo -e "\x1b[91mNo mon interfaces to destroy!\x1b[0m"
+   exit 1
+
+else
+
+n_count=$(($m_count-1))
+
+   for n in $(seq 1 $m_count); do
+
+       iw dev mon$n del >/dev/null; wait
+
+   done
+
+       echo -e "\x1b[91mAll mons are gone\x1b[0m"
+
+fi
+
+######################################
+# Create more than "1" mon interface #
+######################################
+
+elif [ "$CHOICE" == "-m" ]; then
+
+     echo "Set up to 10 new virtual NICs."
+     read -p "How many new VNICs do you want?: " VNICS
+
+     if [ "$VNICS" -gt "10" ]; then
+     
+        echo -e "\x1b[91mCannot set more than 10 VNICS!\x1b[0m"
+        exit 1
+
+     elif [ "$VNICS" -lt "2" ]; then
+
+        echo -e "\x1b[91mIf not more than 1 VNIC use -c option!\x1b[0m"
+        exit 1
+
+     fi
+
+     clear
+
+     for i in $(seq 1 $VNICS); do
+
+     create_iface() {
+
+        nmacs="$(RAND_MAC)"
+        iw dev wlo1 interface add mon$i type monitor; wait
+        add_mac() { macchanger mon$i -m $nmacs 2>&1 | grep -o '\[ERROR\]'; wait; }
+
+            while [ "$(add_mac)" == "[ERROR]" ]; do
+
+                  iw mon$i del && wait && create_iface
+
+            if [ "$(add_mac)" != "[ERROR]" ]; then
+                  break
+            fi; done; }
+
+        create_iface && wait
+        ifconfig mon$i up && wait
+        echo -e "\x1b[32mmon$i is up!\x1b[0m"
+
+     done
+
+#############################################
+# If all user input errors, print help menu #
+#############################################
+
+else
+
+   echo "
+###########
+# EXAMPLE #
+###########
+
+User@group:~# makemon -c
+
+or...
+
+User@group:~# makemon -d
+
+or...
+
+User@group:~# makemon -m"
+
+fi
+}
+
+MASTER
