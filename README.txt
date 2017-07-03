@@ -4,7 +4,11 @@ Make a single (or up to 10) monitor mode wireless interfaces with unique mac add
 # Dependencies
 1.) iw
 2.) macchanger
- 
+
+# Installation
+Move "makemon" to "/usr/bin/" directory/folder or any directory you choose and make an
+alias to it in your .bashrc file and make the file executable. That's it.
+
 # Usage
 User@group:~# makemon -c     <--Creates a single monitor interface.
 User@group:~# makemon -m     <--Creates many mon interfaces up to 10.
