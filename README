@@ -10,12 +10,10 @@ Move "makemon" to "/usr/bin/" directory/folder or any directory you choose and m
 alias to it in your .bashrc file and make the file executable. That's it.
 
 # Usage
-User@group:~# makemon -c     <--Creates a single monitor interface.
-User@group:~# makemon -m     <--Creates many mon interfaces up to 10.
-User@group:~# makemon -d     <--Delete all mon interfaces.
+Enter "makemon" as a terminal command. Then follow the prompts.
  
 # Extra Info
-This tool does not use "macchanger" to generate mac addresses. It instead uses macchanger
+This tool does not use "macchanger" to generate mac addresses. It, instead, uses macchanger
 to compare the randomly generated mac with the first 3 octets in macchanger's mac vendor list.
  
 # Disclaimer
