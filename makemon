@@ -102,6 +102,7 @@ nmac="$(RAND_MAC)"
 
 if [ "$CHOICE" == "1" ]; then
 
+remove_mon
 ifconfig $IFACE down; wait
 iw dev $IFACE interface add mon1 type monitor; wait
 add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
