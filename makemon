@@ -11,13 +11,27 @@ pur=$'\x1b[35m'
 ylw=$'\x1b[33m'
 rst=$'\x1b[0m'
 
-echo -e "
-${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}
-${pur}$(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)${rst}
-${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}\n"
+if [ ! "$(cat /etc/environment | grep -o 'IFACE[^ ]*')" ]; then
 
-read -p "${grn}Enter a wireless interface to use:${rst} " iface
-ifconfig $iface down; wait
+  echo -e "${grn}Your global interface variable is not set.${rst}"
+  echo -e "${grn}It should only need to be set once.${rst}\n"
+  read -p "${ylw}Press <${red}enter${ylw}> to continue${rst}"
+  clear
+
+  echo -e "
+  ${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}
+  ${pur}  $(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)${rst}
+  ${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}\n"
+  read -p "${grn}Enter a wireless interface to use:${rst} " i_face
+  echo -e "\nIFACE=$i_face" >> /etc/environment && wait
+  echo -e "${grn}Your interface has been set. You won't have to set it again so long
+as it remains in ${ylw}/etc/environment${grn}. Please reload ${ylw}/etc/environment${grn}
+by ${red}rebooting${grn}.${rst}\n"
+  exit 0
+
+fi
+
+ifconfig $IFACE down; wait
 clear
 
 echo -e "
@@ -36,10 +50,6 @@ fi
 
 clear
 
-###############################################
-# Remove all mons before making multiple mons #
-###############################################
-
 remove_mon() {
 
 m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
@@ -55,6 +65,7 @@ n_count=$(($m_count-1))
    done
 
 fi
+
 }
 
 
@@ -92,7 +103,7 @@ nmac="$(RAND_MAC)"
 
 if [ "$CHOICE" == "1" ]; then
 
-iw dev $iface interface add mon1 type monitor; wait
+iw dev $IFACE interface add mon1 type monitor; wait
 add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
 
    if [ "$(add_mac)" == "[ERROR]" ]; then
@@ -130,7 +141,7 @@ n_count=$(($m_count-1))
 
    done
 
-       ifconfig $iface up; wait
+       ifconfig $IFACE up; wait
        echo -e "\x1b[91mAll mons are gone\x1b[0m"
 
 fi
@@ -165,7 +176,7 @@ remove_mon
      create_iface() {
 
         nmacs="$(RAND_MAC)"
-        iw dev $iface interface add mon$i type monitor; wait
+        iw dev $IFACE interface add mon$i type monitor; wait
         add_mac() { macchanger mon$i -m $nmacs 2>&1 | grep -o '\[ERROR\]'; wait; }
 
             while [ "$(add_mac)" == "[ERROR]" ]; do
