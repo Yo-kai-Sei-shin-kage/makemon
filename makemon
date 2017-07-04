@@ -36,6 +36,10 @@ fi
 
 clear
 
+###############################################
+# Remove all mons before making multiple mons #
+###############################################
+
 remove_mon() {
 
 m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
@@ -51,7 +55,6 @@ n_count=$(($m_count-1))
    done
 
 fi
-
 }
 
 
