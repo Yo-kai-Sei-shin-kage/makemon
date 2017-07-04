@@ -5,7 +5,55 @@ while [ "$(whoami)" != "root" ]; do
     exit 1
 done
 
-CHOICE="$1"
+grn=$'\x1b[32m'
+red=$'\x1b[31m'
+pur=$'\x1b[35m'
+ylw=$'\x1b[33m'
+rst=$'\x1b[0m'
+
+echo -e "
+${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}
+${pur}$(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)${rst}
+${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}\n"
+
+read -p "${grn}Enter a wireless interface to use:${rst} " iface
+ifconfig $iface down; wait
+clear
+
+echo -e "
+${grn}#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#     ${rst}
+${ylw} 1${red}.${grn}) ${rst}${pur}Make 1 monitor interface      ${rst}
+${ylw} 2${red}.${grn}) ${rst}${pur}Make multiple interfaces      ${rst}
+${ylw} 3${red}.${grn}) ${rst}${pur}Delete monitor interfaces     ${rst}
+${ylw} 4${red}.${grn}) ${rst}${red}Exit                          ${rst}
+${grn}#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#     ${rst}\n"
+
+read -p "${grn}Enter an option:${rst} " CHOICE
+
+if [ "$CHOICE" == "4" ]; then
+   clear && exit
+fi
+
+clear
+
+remove_mon() {
+
+m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
+
+if [ "$m_count" -gt "0" ]; then
+
+n_count=$(($m_count-1))
+
+   for n in $(seq 1 $m_count); do
+
+       iw dev mon$n del >/dev/null; wait
+
+   done
+
+fi
+
+}
+
 
 MASTER() {
 
@@ -39,9 +87,9 @@ nmac="$(RAND_MAC)"
 # a randomized mac address               #
 ##########################################
 
-if [ "$CHOICE" == "-c" ]; then
+if [ "$CHOICE" == "1" ]; then
 
-iw dev wlo1 interface add mon1 type monitor; wait
+iw dev $iface interface add mon1 type monitor; wait
 add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
 
    if [ "$(add_mac)" == "[ERROR]" ]; then
@@ -59,7 +107,7 @@ add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
 # Delete all mon interfaces #
 #############################
  
-elif [ "$CHOICE" == "-d" ]; then
+elif [ "$CHOICE" == "3" ]; then
 
 # Check if any mons exist #    
 m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
@@ -79,6 +127,7 @@ n_count=$(($m_count-1))
 
    done
 
+       ifconfig $iface up; wait
        echo -e "\x1b[91mAll mons are gone\x1b[0m"
 
 fi
@@ -87,19 +136,21 @@ fi
 # Create more than "1" mon interface #
 ######################################
 
-elif [ "$CHOICE" == "-m" ]; then
+elif [ "$CHOICE" == "2" ]; then
 
-     echo "Set up to 10 new virtual NICs."
-     read -p "How many new VNICs do you want?: " VNICS
+remove_mon
+
+     echo -e "${grn}Set up to 10 new virtual NICs${rst}"
+     read -p "${grn}How many new VNICs do you want?:${rst} " VNICS
 
      if [ "$VNICS" -gt "10" ]; then
      
-        echo -e "\x1b[91mCannot set more than 10 VNICS!\x1b[0m"
+        echo -e "${red}Cannot set more than 10 VNICS!${rst}"
         exit 1
 
      elif [ "$VNICS" -lt "2" ]; then
 
-        echo -e "\x1b[91mIf not more than 1 VNIC use -c option!\x1b[0m"
+        echo -e "${red}If not more than 1 VNIC use option 1!${rst}"
         exit 1
 
      fi
@@ -111,7 +162,7 @@ elif [ "$CHOICE" == "-m" ]; then
      create_iface() {
 
         nmacs="$(RAND_MAC)"
-        iw dev wlo1 interface add mon$i type monitor; wait
+        iw dev $iface interface add mon$i type monitor; wait
         add_mac() { macchanger mon$i -m $nmacs 2>&1 | grep -o '\[ERROR\]'; wait; }
 
             while [ "$(add_mac)" == "[ERROR]" ]; do
@@ -124,30 +175,9 @@ elif [ "$CHOICE" == "-m" ]; then
 
         create_iface && wait
         ifconfig mon$i up && wait
-        echo -e "\x1b[32mmon$i is up!\x1b[0m"
+        echo -e "${grn}mon$i is up!${rst}"
 
      done
-
-#############################################
-# If all user input errors, print help menu #
-#############################################
-
-else
-
-   echo "
-###########
-# EXAMPLE #
-###########
-
-User@group:~# makemon -c
-
-or...
-
-User@group:~# makemon -d
-
-or...
-
-User@group:~# makemon -m"
 
 fi
 }
