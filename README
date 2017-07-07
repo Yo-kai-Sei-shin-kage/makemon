@@ -14,7 +14,8 @@ Enter "makemon" as a terminal command. Then follow the prompts.
  
 # Extra Info
 This tool does not use "macchanger" to generate mac addresses. It, instead, uses macchanger
-to compare the randomly generated mac with the first 3 octets in macchanger's mac vendor list.
+to compare the randomly generated mac with macchanger's mac vendor list to make sure the mac is
+valid.
  
 # Disclaimer
 This tool is released to the public in the hopes that it will be useful. This has not been coded
