@@ -13,21 +13,34 @@ rst=$'\x1b[0m'
 
 if [ ! "$(cat /etc/environment | grep -o 'IFACE[^ ]*')" ]; then
 
+  clear
   echo -e "${grn}Your global interface variable is not set.${rst}"
   echo -e "${grn}It should only need to be set once.${rst}\n"
   read -p "${ylw}Press <${red}enter${ylw}> to continue${rst}"
   clear
 
   echo -e "
-  ${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}
-  ${pur}  $(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)${rst}
-  ${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}\n"
-  read -p "${grn}Enter a wireless interface to use:${rst} " i_face
-  echo -e "\nIFACE=$i_face" >> /etc/environment && wait
-  echo -e "${grn}Your interface has been set. You won't have to set it again so long
-as it remains in ${ylw}/etc/environment${grn}. Please reload ${ylw}/etc/environment${grn}
-by logging out and then logging back in or rebooting.${rst}\n"
-  exit 0
+${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}
+${pur}$(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)${rst}
+${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}\n"
+  read -p "${grn}Enter a wireless interface to use, [press enter to set later]:${rst} " i_face
+  
+   if [ "$i_face" ]; then
+  
+      echo -e "\nIFACE=$i_face" >> /etc/environment && wait
+      echo -e "${grn}Your interface has been set. You won't have to set it again so long
+as it remains in ${ylw}/etc/environment${grn}. To reload ${ylw}/etc/environment${grn},
+for system-wide use, log out and then log back in or reboot.${rst}\n"
+      read -p "${grn}press ${ylw}<${red}enter${ylw}>${grn} to continue${rst}"
+      clear
+
+   fi
+fi
+
+# For live ISO compatibility IFACE set with iw output.
+if [ ! "$IFACE" ]; then
+
+   IFACE="$(iw dev | grep -m1 -o 'Interface w[^ ]*' | sed -e 's/Interface //g')"
 
 fi
 
@@ -59,7 +72,7 @@ n_count=$(($m_count-1))
 
    for n in $(seq 1 $m_count); do
 
-       iw dev mon$n del >/dev/null; wait
+       iw dev mon$n del 2>&1>/dev/null; wait
 
    done
 
@@ -103,6 +116,7 @@ nmac="$(RAND_MAC)"
 if [ "$CHOICE" == "1" ]; then
 
 remove_mon
+
 ifconfig $IFACE down; wait
 iw dev $IFACE interface add mon1 type monitor; wait
 add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
@@ -138,11 +152,12 @@ n_count=$(($m_count-1))
 
    for n in $(seq 1 $m_count); do
 
-       iw dev mon$n del >/dev/null; wait
+       iw dev mon$n del 2>&1>/dev/null; wait
 
    done
 
        ifconfig $IFACE up; wait
+       systemctl restart NetworkManager.service; wait
        echo -e "\x1b[91mAll mons are gone\x1b[0m"
 
 fi
