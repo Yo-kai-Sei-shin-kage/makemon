@@ -12,6 +12,14 @@ Make a single (or up to 10) monitor mode wireless interfaces with unique mac add
 Move "makemon" to "/usr/bin/" directory/folder or any directory you choose and make an
 alias to it in your .bashrc file and make the file executable. That's it.
 
+[Steps to install]
+Open linux terminal and enter each step in order.
+1.) git clone https://github.com/Yo-kai-Sei-shin-kage/makemon.git
+2.) cd makemon/
+3.) mv makemon /usr/bin
+4.) chown root:root /usr/bin/makemon
+5.) chmod +x /usr/bin/makemon
+
 # Usage
 Enter "makemon" as a terminal command. Then follow the prompts.
  
