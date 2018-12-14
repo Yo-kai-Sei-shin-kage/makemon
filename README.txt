@@ -13,7 +13,7 @@ Open linux terminal and enter each step in order.
 
 1.) git clone https://github.com/Yo-kai-Sei-shin-kage/makemon.git
 2.) cd makemon/
-3.) cp makemon /usr/bin/makemon
+3.) cp makemon_v1.2-18 /usr/bin/makemon
 4.) chown $USER:$USER /usr/bin/makemon
 5.) chmod u+x /usr/bin/makemon
 
