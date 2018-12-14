@@ -31,7 +31,7 @@ for system-wide use, log out and then log back in or reboot.\n"
       clear
 
    fi
-
+   
 fi
 
 # For live ISO compatibility IFACE set with iw output.
