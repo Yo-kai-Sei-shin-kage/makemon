@@ -1,12 +1,14 @@
 # makemon by Yokai Seishinkage #
-Make a single (or up to 10) monitor mode wireless interfaces with unique mac addresses.
+
+Make a single (or many) monitor mode wireless interfaces with
+unique mac addresses. Makemon is a slim tool for creating a
+single or many virtual monitor-mode wireless interfaces for
+various wireless tasks. You can use command-line options or you
+can use the simple command-line user interface to select what
+options you want to use.
 
 # Dependencies
 1.) iw
-2.) macchanger
-3.) systemd
-4.) pamd
-5.) ifconfig
 
 # Installation
 Move "makemon" to "/usr/bin/" directory/folder or any directory you choose and make an
@@ -18,16 +20,25 @@ Open linux terminal and enter each step in order.
 2.) cd makemon/
 3.) mv makemon /usr/bin
 4.) chown root:root /usr/bin/makemon
-5.) chmod +x /usr/bin/makemon
+5.) chmod u+x /usr/bin/makemon
 
 # Usage
-Enter "makemon" as a terminal command. Then follow the prompts.
- 
-# Extra Info
-This tool does not use "macchanger" to generate mac addresses. It, instead, uses macchanger
-to compare the randomly generated mac with macchanger's mac vendor list to make sure the mac is
-valid. It isn't necessary or required to set the global IFACE variable when first prompted but,
-you will be asked to do so each time makemon is run, if IFACE is not set.
+
+[USER INTERFACE USAGE]
+
+   Run <makemon> as a command and follow the prompts.
+
+[COMMAND-LINE USAGE]
+
+   makemon [-olrh] OR makemon [-m] [2..99+]
+
+[OPTIONS]
+
+  -o   --one)     Create a single virtual monitor interface.
+  -m   --multi)   Create multiple virtual monitor mode interfaces.
+  -l   --list)    Show created virtual monitor mode interfaces.
+  -r   --remove)  Delete all virtual monitor interfaces.
+  -h   --help)    Show this menu.
  
 # Disclaimer
 This tool is released to the public in the hopes that it will be useful. This has not been coded
