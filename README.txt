@@ -41,4 +41,7 @@ and absolutely best manner. You will notice there is little to no comments. This
 looking into bash programming on their own and learning the shell more effectively through self-study.
 Learn to help improve open source tools and the open source community and we can all benefit.
 
+# Bugs/Issues
+Please report any bugs, issues, and requests for features here: https://github.com/Yo-kai-Sei-shin-kage/makemon/issues
+
 Cheers!!
