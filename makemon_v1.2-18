@@ -30,7 +30,6 @@ for system-wide use, log out and then log back in or reboot.\n"
      fi
   fi
 }; check_iface
-
 main_interface() {
 
 # For live ISO compatibility IFACE set with iw output.
