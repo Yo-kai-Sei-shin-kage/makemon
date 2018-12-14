@@ -1,0 +1,13 @@
+##################
+# Version 1.2-18 #
+##################
+
+ #~ MAJOR ~#
+
+    1.) Added the "list" feature.
+    2.) Removed max interface limit.
+
+ #~ MINOR ~#
+
+    Included ability to use as a stand-alone command or the
+    built-in cli user-interface.
