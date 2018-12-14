@@ -1,37 +1,33 @@
 #!/bin/bash
 
-while [ "$(whoami)" != "root" ]; do
+while [ "$UID" != "0" ]; do
     echo "You must be root!"
     exit 1
 done
 
-grn=$'\x1b[32m'
-red=$'\x1b[31m'
-pur=$'\x1b[35m'
-ylw=$'\x1b[33m'
-rst=$'\x1b[0m'
+main_interface() {
 
 if [ ! "$(cat /etc/environment | grep -o 'IFACE[^ ]*')" ]; then
 
   clear
-  echo -e "${grn}Your global interface variable is not set.${rst}"
-  echo -e "${grn}It should only need to be set once.${rst}\n"
-  read -p "${ylw}Press <${red}enter${ylw}> to continue${rst}"
+  echo -e "Your global interface variable is not set."
+  echo -e "It should only need to be set once.\n"
+  read -p "Press <enter> to continue"
   clear
 
   echo -e "
-${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}
-${pur}$(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)${rst}
-${ylw}#${grn}~~~~~~~~~~~~~~~~${ylw}#${rst}\n"
-  read -p "${grn}Enter a wireless interface to use, [press enter to set later]:${rst} " i_face
-  
+#~~~~~~~~~~~~~~~~#
+$(iw dev | grep -o 'Interface [^ ]*' | sed -e 's/Interface //g' | sort -n)
+#~~~~~~~~~~~~~~~~#\n"
+  read -p "Enter a wireless interface to use, [press enter to set later]: " i_face
+
    if [ "$i_face" ]; then
-  
+
       echo -e "\nIFACE=$i_face" >> /etc/environment && wait
-      echo -e "${grn}Your interface has been set. You won't have to set it again so long
-as it remains in ${ylw}/etc/environment${grn}. To reload ${ylw}/etc/environment${grn},
-for system-wide use, log out and then log back in or reboot.${rst}\n"
-      read -p "${grn}press ${ylw}<${red}enter${ylw}>${grn} to continue${rst}"
+      echo -e "Your interface has been set. You won't have to set it again so long
+as it remains in /etc/environment. To reload /etc/environment,
+for system-wide use, log out and then log back in or reboot.\n"
+      read -p "press <enter> to continue"
       clear
 
    fi
@@ -48,170 +44,157 @@ fi
 clear
 
 echo -e "
-${grn}#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#     ${rst}
-${ylw} 1${red}.${grn}) ${rst}${pur}Make 1 monitor interface      ${rst}
-${ylw} 2${red}.${grn}) ${rst}${pur}Make multiple interfaces      ${rst}
-${ylw} 3${red}.${grn}) ${rst}${pur}Delete monitor interfaces     ${rst}
-${ylw} 4${red}.${grn}) ${rst}${red}Exit                          ${rst}
-${grn}#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#     ${rst}\n"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+ 1.) Make 1 monitor interface
+ 2.) Make multiple interfaces
+ 3.) List created interfaces
+ 4.) Delete monitor interfaces
+ 5.) Help menu
+ 6.) Exit
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#     \n"
+}
 
-read -p "${grn}Enter an option:${rst} " CHOICE
+rand_mac() {
 
-if [ "$CHOICE" == "4" ]; then
-   clear && exit
-fi
+   gen() { local NUM="$(tr -dc '0-9a-f' </dev/urandom | head -c 2)"; echo -n "$NUM:"; }
 
-clear
+   for c in {1..6}; do
+
+       if [ "$c" -lt "6" ]; then
+          gen
+       else
+          gen | tr -d ':'
+       fi
+
+   done
+}
 
 remove_mon() {
 
-m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
+   count="$(iw dev | grep -o "mon[1-9]" | wc -l)"
 
-if [ "$m_count" -gt "0" ]; then
+   if [ "$count" == "0" ]; then clear && echo "No interfaces to remove!"; exit 1; fi
 
-n_count=$(($m_count-1))
+   for a in $(seq 1 $count)
+   do
 
-   for n in $(seq 1 $m_count); do
-
-       iw dev mon$n del 2>&1>/dev/null; wait
+       iw mon${a} del
 
    done
-
-fi
-
 }
 
+# Variable assigned a random mac.
+nmac="$(rand_mac)"
 
-MASTER() {
+make_mon() {
 
-#################
-# Randomize Mac #
-#################
+   if [ "$(iw dev | grep -o "mon[1-9]" | wc -l)" -gt "0" ]; then remove_mon; fi
+   if [ "$(iw $IFACE interface add mon1 type monitor addr ${1} 2>&1 | grep -Eo 'command failed')" ]; then
 
-RAND_MAC() {
-
-gen() {
-NUM="$(tr -dc '0-9a-f' </dev/urandom | head -c 2)"
-echo -n $NUM:
-}
-
-for c in {1..6}; do
-
-   if [ "$c" -lt "6" ]; then
-      gen
-   else
-      gen | tr -d ':'
-   fi
-
-done
-}
-
-# Save Randomize mac to variable "nmac" #
-nmac="$(RAND_MAC)"
-
-##########################################
-# Create a single new mon interface with #
-# a randomized mac address               #
-##########################################
-
-if [ "$CHOICE" == "1" ]; then
-
-remove_mon
-
-ifconfig $IFACE down; wait
-iw dev $IFACE interface add mon1 type monitor; wait
-add_mac() { macchanger mon1 -m $nmac 2>&1 | grep -o '\[ERROR\]'; wait; }
-
-   if [ "$(add_mac)" == "[ERROR]" ]; then
-
-      iw mon1 del && MASTER
+      unset nmac; nmac="$(rand_mac)"
+      make_mon "$nmac" && wait
 
    else
 
-      ifconfig mon1 up; wait
-      echo -e "\x1b[32mmon1 is up\x1b[0m"
+      clear; echo -e "mon1 is up!"
 
    fi
+}
 
-#############################
-# Delete all mon interfaces #
-#############################
- 
-elif [ "$CHOICE" == "3" ]; then
+multi_mon() {
 
-# Check if any mons exist #    
-m_count="$(echo -n $(iw dev | grep -o 'mon[0-9]' | wc -l))"
+   if [ "$(iw dev | grep -o "mon[1-9]" | wc -l)" -gt "0" ]; then remove_mon; fi
+      VNICS="${1}"
+   if [ ! "${1}" ]; then read -p "How many VNICs do you want?: " VNICS; fi
+      clear; for ((n=1; n <= VNICS; n++))
+   do
 
-if [ "$m_count" == "0" ]; then
+      maker() {
 
-   echo -e "\x1b[91mNo mon interfaces to destroy!\x1b[0m"
-   exit 1
+         if [ "$(iw $IFACE interface add mon${n} type monitor addr $(rand_mac) 2>&1 | grep -Eo 'command failed')" ]; then
 
+            unset nmac; local nmac="$(rand_mac)"
+            maker && wait
+
+         else
+
+            clear; echo -e "mon${n} is up..."
+            return;
+
+         fi; }; maker; done
+
+   clear && echo -e "All ${1} interfaces are up!"
+
+}
+
+list_mon() {
+
+   local count="$(iw dev | grep -o "mon[0-9]" | wc -l)"
+   if [ "$count" == "0" ]; then echo -e "[ERROR]:Nothing to list!"; fi
+
+   for ((b=1; b <= count; b++))
+   do
+
+       echo -e "$(iw dev | grep -m1 -Eo "mon(${b}){1}")"
+
+   done | column
+
+}
+
+help_menu() {
+
+   echo -e "
+Makemon is a slim tool for creating a single or many virtual
+monitor-mode wireless interfaces for various wireless tasks.
+You can use command-line options or you can use the simple
+command-line user interface to select what options you want
+to use.
+
+[USER INTERFACE USAGE]
+
+   Run <makemon> as a command and follow the prompts.
+
+[COMMAND-LINE USAGE]
+
+   makemon [-olrh] OR makemon [-m] [2..99+]
+
+[OPTIONS]
+
+  -o   --one)     Create a single virtual monitor interface.
+  -m   --multi)   Create multiple virtual monitor mode interfaces.
+  -l   --list)    Show created virtual monitor mode interfaces.
+  -r   --remove)  Delete all virtual monitor interfaces.
+  -h   --help)    Show this menu.
+
+Report bugs @ https://github.com/yo-kai-sei-shin-kage/makemon
+"; exit 0
+}
+
+if [ ! "${1}" ]; then
+
+   main_interface
+   read -p "Enter an option: " CHOICE
+   clear; case $CHOICE in
+
+          1) make_mon "$(rand_mac)" ;;
+          2) multi_mon ;;
+          3) list_mon ;;
+          4) remove_mon && clear; echo -e "All monitor interfaces removed!" ;;
+          5) help_menu ;;
+          6) exit 0 ;;
+          *) echo -e "[ERROR]: ${CHOICE} is not an accepted option!"; help_menu ;;
+
+          esac
 else
 
-n_count=$(($m_count-1))
+   CHOICE="${1}"
+   clear; case $CHOICE in
 
-   for n in $(seq 1 $m_count); do
-
-       iw dev mon$n del 2>&1>/dev/null; wait
-
-   done
-
-       ifconfig $IFACE up; wait
-       systemctl restart NetworkManager.service; wait
-       echo -e "\x1b[91mAll mons are gone\x1b[0m"
-
+          -o|--one) make_mon "$(rand_mac)" ;;
+        -m|--multi) multi_mon "${2}" ;;
+         -l|--list) list_mon && exit 0 ;;
+       -r|--remove) remove_mon && clear; echo -e "All monitor interfaces removed!" ;;
+       -h|--help|?) help_menu && exit 0 ;;
+                 *) echo -e "[ERROR]: ${1} is not an accepted option!"; help_menu ;;
+   esac
 fi
-
-######################################
-# Create more than "1" mon interface #
-######################################
-
-elif [ "$CHOICE" == "2" ]; then
-
-ifconfig $IFACE down; wait
-remove_mon
-
-     echo -e "${grn}Set up to 10 new virtual NICs${rst}"
-     read -p "${grn}How many new VNICs do you want?:${rst} " VNICS
-
-     if [ "$VNICS" -gt "10" ]; then
-     
-        echo -e "${red}Cannot set more than 10 VNICS!${rst}"
-        exit 1
-
-     elif [ "$VNICS" -lt "2" ]; then
-
-        echo -e "${red}If not more than 1 VNIC use option 1!${rst}"
-        exit 1
-
-     fi
-
-     clear
-
-     for i in $(seq 1 $VNICS); do
-
-     create_iface() {
-
-        nmacs="$(RAND_MAC)"
-        iw dev $IFACE interface add mon$i type monitor; wait
-        add_mac() { macchanger mon$i -m $nmacs 2>&1 | grep -o '\[ERROR\]'; wait; }
-
-            while [ "$(add_mac)" == "[ERROR]" ]; do
-
-                  iw mon$i del && wait && create_iface
-
-            if [ "$(add_mac)" != "[ERROR]" ]; then
-                  break
-            fi; done; }
-
-        create_iface && wait
-        ifconfig mon$i up && wait
-        echo -e "${grn}mon$i is up!${rst}"
-
-     done
-
-fi
-}
-
-MASTER
